@@ -1,0 +1,13 @@
+repositories {
+    maven {
+        name "Fyber's maven repo"
+    	url "https://fyber.bintray.com/maven"
+   }
+}
+
+cdvPluginPostBuildExtras.add({
+
+	dependencies {
+	    compile 'com.fyber:fyber-sdk:8.7.0'
+	}
+});

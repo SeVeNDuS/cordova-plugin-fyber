@@ -1,0 +1,38 @@
+<?xml version='1.0' encoding='utf-8'?>
+<plugin id="cordova-plugin-fyber" version="0.0.1" xmlns="http://apache.org/cordova/ns/plugins/1.0"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <name>cordova-plugin-fyber</name>
+    <description>Add support for Fyber ads in a Cordova app</description>
+    <js-module src="www/fyber.js" name="Fyber">
+        <clobbers target="fyber" />
+    </js-module>
+
+    <engines>
+        <engine name="cordova-android" version=">=4.0.0" />
+        <engine name="cordova-plugman" version=">=4.2.0" />
+    </engines>
+
+    <platform name="android">
+
+        <config-file target="res/xml/config.xml" parent="/*">
+            <feature name="FyberPlugin">
+                <param name="android-package" value="com.mondocore.cordova.plugin.fyber.FyberPlugin" />
+            </feature>
+        </config-file>
+        
+        <config-file target="AndroidManifest.xml" parent="/manifest">
+            <uses-permission android:name="android.permission.INTERNET" />
+        </config-file>
+
+        <config-file target="AndroidManifest.xml" parent="/manifest/application">
+            <activity android:name="com.fyber.ads.ofw.OfferWallActivity" android:configChanges="orientation|screenSize" />
+            <activity android:configChanges="screenSize|orientation" android:name="com.fyber.ads.videos.RewardedVideoActivity" android:hardwareAccelerated="true"/>
+            <activity android:name="com.fyber.ads.interstitials.InterstitialActivity" android:configChanges="screenSize|orientation" android:theme="@android:style/Theme.Translucent" />
+        </config-file>
+
+        <source-file src="src/android/FyberPlugin.java"
+            target-dir="src/com/mondocore/cordova/plugin/fyber" />
+        <framework src="src/android/fyber.gradle" custom="true" type="gradleReference" />
+        <framework src="com.google.android.gms:play-services-ads:+" />
+    </platform>
+</plugin>

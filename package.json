@@ -1,0 +1,24 @@
+{
+  "name": "cordova-plugin-fyber",
+  "version": "0.0.1",
+  "description": "a cordova plugin for Fyber",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SeVeNDuS/cordova-plugin-fyber.git"
+  },
+  "keywords": [
+    "ecosystem:cordova",
+    "cordova-android",
+    "fyber"
+  ],
+  "author": "SeVeNDuS",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/SeVeNDuS/cordova-plugin-fyber/issues"
+  },
+  "homepage": "https://github.com/SeVeNDuS/cordova-plugin-fyber#readme"
+}
