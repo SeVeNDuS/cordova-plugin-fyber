@@ -1,4 +1,4 @@
-package uk.mondosports.plugins.fyber;
+package com.mondocore.cordova.plugin.fyber;
 
 import java.util.HashMap;
 import java.util.Map;
