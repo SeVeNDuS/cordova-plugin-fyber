@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<plugin id="cordova-plugin-fyber" version="0.0.1" xmlns="http://apache.org/cordova/ns/plugins/1.0"
+<plugin id="cordova-plugin-fyber" version="0.0.2" xmlns="http://apache.org/cordova/ns/plugins/1.0"
     xmlns:android="http://schemas.android.com/apk/res/android">
     <name>cordova-plugin-fyber</name>
     <description>Add support for Fyber ads in a Cordova app</description>
@@ -30,7 +30,7 @@
             <activity android:name="com.fyber.ads.interstitials.InterstitialActivity" android:configChanges="screenSize|orientation" android:theme="@android:style/Theme.Translucent" />
         </config-file>
 
-        <source-file src="src/android/FyberPlugin.java"
+        <source-file src="android/FyberPlugin.java"
             target-dir="src/com/mondocore/cordova/plugin/fyber" />
         <framework src="src/android/fyber.gradle" custom="true" type="gradleReference" />
         <framework src="com.google.android.gms:play-services-ads:+" />
