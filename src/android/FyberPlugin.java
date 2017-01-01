@@ -138,7 +138,7 @@ public class FyberPlugin extends CordovaPlugin implements VirtualCurrencyCallbac
         this.cordova.getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                view.loadUrl("javascript:cordova.fireWindowEvent('" + event + "');");
+                view.loadUrl("javascript:cordova.fireDocumentEvent('" + event + "');");
             }
         });
     }
@@ -148,7 +148,7 @@ public class FyberPlugin extends CordovaPlugin implements VirtualCurrencyCallbac
         this.cordova.getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                view.loadUrl(String.format("javascript:cordova.fireWindowEvent('%s', %s);", event, data.toString()));
+                view.loadUrl(String.format("javascript:cordova.fireDocumentEvent('%s', %s);", event, data.toString()));
             }
         });
     }

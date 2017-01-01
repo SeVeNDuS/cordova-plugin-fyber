@@ -1,6 +1,6 @@
 {
   "name": "cordova-plugin-fyber",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "a cordova plugin for Fyber",
   "main": "index.js",
   "scripts": {
