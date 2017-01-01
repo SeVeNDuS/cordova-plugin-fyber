@@ -25,15 +25,16 @@ import com.fyber.requesters.RequestError;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
+import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.PluginResult;
 import org.apache.cordova.PluginResult.Status;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class FyberPlugin extends CordovaPlugin implements RequestCallback, VirtualCurrencyCallback{
+public class FyberPlugin extends CordovaPlugin implements VirtualCurrencyCallback{
 
-    private static final String LOGTAG = "FyberPlugin";
+    private static final String LOGTAG = "[FyberPlugin]";
     private static final String DEFAULT_APP_KEY = "27434";
     private static final String DEFAULT_VIRTUALCURRENCY_NAME = "mondos";
 
@@ -56,10 +57,26 @@ public class FyberPlugin extends CordovaPlugin implements RequestCallback, Virtu
     private String securityToken = "";
     private String virtualCurrencyName = DEFAULT_VIRTUALCURRENCY_NAME;
 
+    public static final String EVENT_FYBER_OFFERWALL_LOADED = "fyberOfferWallLoaded";
+    public static final String EVENT_FYBER_OFFERWALL_NOT_AVAILABLE = "fyberOfferWallNotAvailable";
+    public static final String EVENT_FYBER_OFFERWALL_ERROR = "fyberOfferWallError";
+    public static final String EVENT_FYBER_REWARDEDVIDEO_LOADED = "fyberRewardedVideoLoaded";
+    public static final String EVENT_FYBER_REWARDEDVIDEO_NOT_AVAILABLE = "fyberRewardedVideoNotAvailable";
+    public static final String EVENT_FYBER_REWARDEDVIDEO_ERROR = "fyberRewardedVideoError";
+    public static final String EVENT_FYBER_INTERSTITIAL_LOADED = "fyberInterstitialLoaded";
+    public static final String EVENT_FYBER_INTERSTITIAL_NOT_AVAILABLE = "fyberInterstitialNotAvailable";
+    public static final String EVENT_FYBER_INTERSTITIAL_ERROR = "fyberInterstitialError";
+    public static final String EVENT_FYBER_VCFAILED = "fyberVCFailed";
+    public static final String EVENT_FYBER_VCSUCCESS = "fyberVCSuccess";
+
+    private Intent offerWallIntent;
+    private Intent rewardedVideoIntent;
+    private Intent interstitialIntent;
+
     @Override
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
         PluginResult result = null;
-        
+
         if (ACTION_INITIALIZE.equals(action)) {
             JSONObject options = args.optJSONObject(0);
             result = executeInitialize(options, callbackContext);
@@ -83,9 +100,9 @@ public class FyberPlugin extends CordovaPlugin implements RequestCallback, Virtu
 
     private PluginResult executeInitialize(JSONObject options, CallbackContext callbackContext) {
         Log.w(LOGTAG, "executeInitialize");
-        
+
         this.initialize(options);
-        
+
         callbackContext.success();
 
         return null;
@@ -106,51 +123,169 @@ public class FyberPlugin extends CordovaPlugin implements RequestCallback, Virtu
         }
 
         try {
-
-            // ** SDK INITIALIZATION **
-            //when you start Fyber SDK you get a Settings object that you can use to customise the SDK behaviour.
-            //Have a look at the method 'customiseFyberSettings' to learn more about possible customisation.
             Fyber.Settings fyberSettings = Fyber
                     .with(this.appKey, cordova.getActivity())
                     .withUserId(this.userId)
                     .withSecurityToken(this.securityToken)
-// by default Fyber SDK will start precaching. If you wish to only start precaching at a later time you can uncomment this line and use 'CacheManager' to start, pause or resume on demand.
-//                  .withManualPrecaching()
-// if you do not provide an user id Fyber SDK will generate one for you
                     .start();
         } catch (IllegalArgumentException e) {
             Log.d(LOGTAG, e.getLocalizedMessage());
         }
     }
 
-    private PluginResult executeShowOfferwall(JSONObject options, CallbackContext callbackContext) {
+    private void fireEvent(final String event) {
+        final CordovaWebView view = this.webView;
+        this.cordova.getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                view.loadUrl("javascript:cordova.fireWindowEvent('" + event + "');");
+            }
+        });
+    }
+
+    private void fireEvent(final String event, final JSONObject data) {
+        final CordovaWebView view = this.webView;
+        this.cordova.getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                view.loadUrl(String.format("javascript:cordova.fireWindowEvent('%s', %s);", event, data.toString()));
+            }
+        });
+    }
+
+    private PluginResult executeShowOfferwall(JSONObject options, final CallbackContext callbackContext) {
         Log.w(LOGTAG, "executeShowOfferwall");
-        
-        OfferWallRequester.create(this).request(cordova.getActivity());
-        
-        callbackContext.success();
+
+        this.cordova.getActivity().runOnUiThread(new Runnable() {
+            RequestCallback requestCallback = new RequestCallback() {
+                @Override
+                public void onAdAvailable(Intent intent) {
+                    offerWallIntent = intent;
+                    Log.d(LOGTAG, "OfferWall are available");
+
+                    JSONObject data = new JSONObject();
+                    try {
+                        data.put("adType", AdFormat.fromIntent(intent));
+                    } catch (JSONException e) {
+                    }
+                    fireEvent(EVENT_FYBER_OFFERWALL_LOADED, data);
+
+                    cordova.getActivity().startActivityForResult(offerWallIntent, OFFERWALL_REQUEST_CODE);
+                }
+
+                @Override
+                public void onAdNotAvailable(AdFormat adFormat) {
+                    // Since we don't have an ad, it's best to reset the video intent
+                    offerWallIntent = null;
+                    fireEvent(EVENT_FYBER_OFFERWALL_NOT_AVAILABLE);
+                    Log.d(LOGTAG, "No ad available");
+                }
+
+                @Override
+                public void onRequestError(RequestError requestError) {
+                    // Since we don't have an ad, it's best to reset the video intent
+                    offerWallIntent = null;
+                    fireEvent(EVENT_FYBER_OFFERWALL_ERROR);
+                    Log.d(LOGTAG, "Something went wrong with the request: " + requestError.getDescription());
+                }
+            };
+
+            @Override
+            public void run() {
+                OfferWallRequester.create(requestCallback).request(cordova.getActivity());
+                callbackContext.success();
+            }
+        });
 
         return null;
     }
-    
-    private PluginResult executeShowRewardedVideo(JSONObject options, CallbackContext callbackContext) {
+
+    private PluginResult executeShowRewardedVideo(JSONObject options, final CallbackContext callbackContext) {
         Log.w(LOGTAG, "executeShowRewardedVideo");
-        
-        RewardedVideoRequester.create(this)
-                .withVirtualCurrencyRequester(getVirtualCurrencyRequester())
-                .request(cordova.getActivity());
-        
-        callbackContext.success();
+
+        this.cordova.getActivity().runOnUiThread(new Runnable() {
+            RequestCallback requestCallback = new RequestCallback() {
+                @Override
+                public void onAdAvailable(Intent intent) {
+                    rewardedVideoIntent = intent;
+                    Log.d(LOGTAG, "Rewarded Video are available");
+
+                    JSONObject data = new JSONObject();
+                    try {
+                        data.put("adType", AdFormat.fromIntent(intent));
+                    } catch (JSONException e) {
+                    }
+                    fireEvent(EVENT_FYBER_REWARDEDVIDEO_LOADED, data);
+
+                    cordova.getActivity().startActivityForResult(rewardedVideoIntent, REWARDED_VIDEO_REQUEST_CODE);
+                }
+
+                @Override
+                public void onAdNotAvailable(AdFormat adFormat) {
+                    rewardedVideoIntent = null;
+                    fireEvent(EVENT_FYBER_REWARDEDVIDEO_NOT_AVAILABLE);
+                    Log.d(LOGTAG, "No ad available");
+                }
+
+                @Override
+                public void onRequestError(RequestError requestError) {
+                    rewardedVideoIntent = null;
+                    fireEvent(EVENT_FYBER_REWARDEDVIDEO_ERROR);
+                    Log.d(LOGTAG, "Something went wrong with the request: " + requestError.getDescription());
+                }
+            };
+
+            @Override
+            public void run() {
+                RewardedVideoRequester.create(requestCallback).request(cordova.getActivity());
+                callbackContext.success();
+            }
+        });
 
         return null;
     }
 
-    private PluginResult executeShowInterstitial(JSONObject options, CallbackContext callbackContext) {
+    private PluginResult executeShowInterstitial(JSONObject options, final CallbackContext callbackContext) {
         Log.w(LOGTAG, "executeShowInterstitial");
-        
-        InterstitialRequester.create(this).request(cordova.getActivity());
-        
-        callbackContext.success();
+
+        this.cordova.getActivity().runOnUiThread(new Runnable() {
+            RequestCallback requestCallback = new RequestCallback() {
+                @Override
+                public void onAdAvailable(Intent intent) {
+                    interstitialIntent = intent;
+                    Log.d(LOGTAG, "Interstitial are available");
+
+                    JSONObject data = new JSONObject();
+                    try {
+                        data.put("adType", AdFormat.fromIntent(intent));
+                    } catch (JSONException e) {
+                    }
+                    fireEvent(EVENT_FYBER_INTERSTITIAL_NOT_AVAILABLE, data);
+
+                    cordova.getActivity().startActivityForResult(interstitialIntent, INTERSTITIAL_REQUEST_CODE);
+                }
+
+                @Override
+                public void onAdNotAvailable(AdFormat adFormat) {
+                    interstitialIntent = null;
+                    fireEvent(EVENT_FYBER_INTERSTITIAL_NOT_AVAILABLE);
+                    Log.d(LOGTAG, "No ad available");
+                }
+
+                @Override
+                public void onRequestError(RequestError requestError) {
+                    interstitialIntent = null;
+                    fireEvent(EVENT_FYBER_INTERSTITIAL_ERROR);
+                    Log.d(LOGTAG, "Something went wrong with the request: " + requestError.getDescription());
+                }
+            };
+
+            @Override
+            public void run() {
+                InterstitialRequester.create(requestCallback).request(cordova.getActivity());
+                callbackContext.success();
+            }
+        });
 
         return null;
     }
@@ -159,49 +294,38 @@ public class FyberPlugin extends CordovaPlugin implements RequestCallback, Virtu
         return VirtualCurrencyRequester.create(this)
                 .notifyUserOnReward(true)
                 .forCurrencyId(this.virtualCurrencyName);
-
-        // forCurrencyId: this is the currency id for RV ad format
-        // you can refer to this -- http://developer.fyber.com/content/android/basics/rewarding-the-user/vcs/
-    }
-
-    @Override
-    public void onAdAvailable(Intent intent) {
-        Log.w(LOGTAG, "Ad available");
-
-        AdFormat adFormat = AdFormat.fromIntent(intent);
-        switch (adFormat) {
-            case OFFER_WALL:
-                cordova.getActivity().startActivityForResult(intent, OFFERWALL_REQUEST_CODE);
-                break;
-            case REWARDED_VIDEO:
-                cordova.getActivity().startActivityForResult(intent, REWARDED_VIDEO_REQUEST_CODE);
-                break;
-            case INTERSTITIAL:
-                cordova.getActivity().startActivityForResult(intent, INTERSTITIAL_REQUEST_CODE);
-                break;
-        }
-    }
-
-    @Override
-    public void onAdNotAvailable(AdFormat adFormat) {
-        Log.w(LOGTAG, "No ad available");
-        webView.loadUrl(String.format("javascript:cordova.fireDocumentEvent('fyberAdNotAvailable', { 'adType': %s });", adFormat));
-    }
-
-    @Override
-    public void onRequestError(RequestError requestError) {
-        Log.w(LOGTAG, "Something went wrong with the request: " + requestError.getDescription());
     }
 
     @Override
     public void onError(VirtualCurrencyErrorResponse virtualCurrencyErrorResponse) {
         Log.w(LOGTAG, "VCS error received - " + virtualCurrencyErrorResponse.getErrorMessage());
-        webView.loadUrl(String.format("javascript:cordova.fireDocumentEvent('fyberVCFailed', { 'reason': %s });", virtualCurrencyErrorResponse.getErrorMessage()));
+
+        JSONObject error = new JSONObject();
+        try {
+            error.put("code", virtualCurrencyErrorResponse.getErrorCode());
+            error.put("message", virtualCurrencyErrorResponse.getErrorMessage());
+        } catch (JSONException e) {
+        }
+        fireEvent(EVENT_FYBER_VCFAILED, error);
     }
 
     @Override
     public void onSuccess(VirtualCurrencyResponse virtualCurrencyResponse) {
         Log.w(LOGTAG, "VCS coins received - " + virtualCurrencyResponse.getDeltaOfCoins());
-        webView.loadUrl(String.format("javascript:cordova.fireDocumentEvent('fyberVCSuccess', { 'amount': %f });", virtualCurrencyResponse.getDeltaOfCoins()));
+
+        JSONObject data = new JSONObject();
+        try {
+            data.put("currencyId", virtualCurrencyResponse.getCurrencyId());
+            data.put("currencyName", virtualCurrencyResponse.getCurrencyName());
+            data.put("transactionId", virtualCurrencyResponse.getLatestTransactionId());
+            data.put("amount", virtualCurrencyResponse.getDeltaOfCoins());
+        } catch (JSONException e) {
+        }
+        fireEvent(EVENT_FYBER_VCSUCCESS, data);
+    }
+
+    @Override
+    public void onRequestError(RequestError requestError) {
+        Log.w(LOGTAG, "Something went wrong with the request: " + requestError.getDescription());
     }
 }
