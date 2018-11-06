@@ -5,6 +5,7 @@ import java.util.Map;
 
 import android.content.Intent;
 import android.util.Log;
+import android.widget.FrameLayout;
 
 import com.fyber.Fyber;
 import com.fyber.utils.FyberLogger;
@@ -16,12 +17,15 @@ import com.fyber.currency.VirtualCurrencyResponse;
 import com.fyber.requesters.RewardedVideoRequester;
 import com.fyber.requesters.VirtualCurrencyCallback;
 import com.fyber.requesters.VirtualCurrencyRequester;
-
 import com.fyber.requesters.InterstitialRequester;
 
 import com.fyber.ads.AdFormat;
 import com.fyber.requesters.RequestCallback;
 import com.fyber.requesters.RequestError;
+
+import com.fyber.ads.banners.BannerAd;
+import com.fyber.ads.banners.BannerAdView;
+import com.fyber.ads.banners.BannerAdListener;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
@@ -60,12 +64,15 @@ public class FyberPlugin extends CordovaPlugin implements VirtualCurrencyCallbac
     public static final String EVENT_FYBER_OFFERWALL_LOADED = "fyberOfferWallLoaded";
     public static final String EVENT_FYBER_OFFERWALL_NOT_AVAILABLE = "fyberOfferWallNotAvailable";
     public static final String EVENT_FYBER_OFFERWALL_ERROR = "fyberOfferWallError";
+
     public static final String EVENT_FYBER_REWARDEDVIDEO_LOADED = "fyberRewardedVideoLoaded";
     public static final String EVENT_FYBER_REWARDEDVIDEO_NOT_AVAILABLE = "fyberRewardedVideoNotAvailable";
     public static final String EVENT_FYBER_REWARDEDVIDEO_ERROR = "fyberRewardedVideoError";
+    
     public static final String EVENT_FYBER_INTERSTITIAL_LOADED = "fyberInterstitialLoaded";
     public static final String EVENT_FYBER_INTERSTITIAL_NOT_AVAILABLE = "fyberInterstitialNotAvailable";
     public static final String EVENT_FYBER_INTERSTITIAL_ERROR = "fyberInterstitialError";
+    
     public static final String EVENT_FYBER_VCFAILED = "fyberVCFailed";
     public static final String EVENT_FYBER_VCSUCCESS = "fyberVCSuccess";
 
@@ -89,6 +96,9 @@ public class FyberPlugin extends CordovaPlugin implements VirtualCurrencyCallbac
         } else if (ACTION_SHOW_INTERSTITIAL.equals(action)) {
             JSONObject options = args.optJSONObject(0);
             result = executeShowInterstitial(options, callbackContext);
+        } else if (ACTION_SHOW_BANNER.equals(action)) {
+            JSONObject options = args.optJSONObject(0);
+            result = executeShowBanner(options, callbackContext);
         }
 
         if (result != null) {
@@ -286,6 +296,48 @@ public class FyberPlugin extends CordovaPlugin implements VirtualCurrencyCallbac
                 callbackContext.success();
             }
         });
+
+        return null;
+    }
+
+    private PluginResult executeShowBanner(JSONObject options, final CallbackContext callbackContext) {
+        Log.w(LOGTAG, "executeShowBanner");
+
+        BannerAdView bannerAdView = new BannerAdView(this.cordova.getActivity())
+            .withListener(new BannerAdListener() {
+                @Override
+                public void onAdError(BannerAd ad, String error) {
+                    // Called when the banner triggered an error
+                    Log.d(TAG, "Something went wrong with the request: " + error);
+                    fireEvent(EVENT_FYBER_BANNER_ERROR, data);
+                }
+
+                @Override
+                public void onAdLoaded(BannerAd ad) {
+                    // Called when the banner has been successfully loaded
+                    Log.d(TAG, "Banner successfully loaded");
+                    fireEvent(EVENT_FYBER_BANNER_LOADED, data);
+                }
+
+                @Override
+                public void onAdClicked(BannerAd ad) {
+                    // Called when the banner was clicked
+                    Log.d(TAG, "User clicked on banner");
+                    fireEvent(EVENT_FYBER_BANNER_CLICKED, data);
+                }
+
+                @Override
+                public void onAdLeftApplication(BannerAd ad) {
+                    // Called when the banner interaction causes an external application to be open
+                    Log.d(TAG, "User directed out of app by banner");
+                    fireEvent(EVENT_FYBER_BANNER_LEFTAPP, data);
+                }
+            }
+        );
+        bannerAdView.loadOnAttach();
+        FrameLayout bannerPlaceholder = (FrameLayout) findViewById(R.id.banner_placeholder);
+        bannerPlaceholder.addView(bannerAdView);
+
 
         return null;
     }

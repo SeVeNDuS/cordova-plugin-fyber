@@ -2,7 +2,7 @@
 <plugin id="cordova-plugin-fyber" version="0.1.1" xmlns="http://apache.org/cordova/ns/plugins/1.0"
     xmlns:android="http://schemas.android.com/apk/res/android">
     <name>cordova-plugin-fyber</name>
-    <description>Add support for Fyber ads in a Cordova app</description>
+    <description>Add support for Fyber ads in a Cordova apps</description>
     <js-module src="www/fyber.js" name="Fyber">
         <clobbers target="Fyber" />
     </js-module>
@@ -30,9 +30,40 @@
             <activity android:name="com.fyber.ads.interstitials.InterstitialActivity" android:configChanges="screenSize|orientation" android:theme="@android:style/Theme.Translucent" />
         </config-file>
 
+        <resource-file src="res/android/layout/banner.xml" target="res/layout/banner.xml" />
         <source-file src="src/android/FyberPlugin.java"
             target-dir="src/com/mondocore/cordova/plugin/fyber" />
         <framework src="src/android/fyber.gradle" custom="true" type="gradleReference" />
-        <framework src="com.google.android.gms:play-services-ads:+" />
+        <framework src="com.google.android.gms:play-services-ads:16.0.0" />
+        
+    </platform>
+
+    <platform name="ios">
+
+        <config-file target="config.xml" parent="/*">
+            <feature name="FyberPlugin">
+                <param name="ios-package" value="FyberPlugin"/>
+            </feature>
+        </config-file>
+
+        <framework src="SystemConfiguration.framework" />
+        <config-file target="*-Info.plist" parent="NSAppTransportSecurity">
+            <dict>
+                <key>NSAllowsArbitraryLoads</key>
+                <true/>
+                <key>NSAllowsArbitraryLoadsForMedia</key>
+                <true/>
+                <key>NSAllowsArbitraryLoadsInWebContent</key>
+                <true/>
+                <key>NSAllowsLocalNetworking</key>
+                <true/>
+            </dict>
+        </config-file>
+
+        <framework src="FyberSDK" type="podspec" spec="8.20.0" />
+
+        <header-file src="src/ios/CDVFyber.h" />
+        <source-file src="src/ios/CDVFyber.m" />
+
     </platform>
 </plugin>

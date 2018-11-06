@@ -8,6 +8,6 @@ repositories {
 cdvPluginPostBuildExtras.add({
 
 	dependencies {
-	    compile 'com.fyber:fyber-sdk:8.7.0'
+	    compile 'com.fyber:fyber-sdk:8.20.0'
 	}
 });
